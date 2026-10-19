@@ -8,12 +8,12 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
-const val kDefaultDynamicLinkBaseUrl = "https://backend-dynamiclink.tecocraft.us"
+const val kDefaultDynamicLinkBaseUrl = "https://backend.linkhas.com"
 private const val TAG = "MyDeeplinkSdk"
 private const val REQUEST_TIMEOUT_SECONDS = 15L
 
 /**
- * Calls Tecocraft dynamic-link HTTP APIs.
+ * Calls dynamic-link HTTP APIs.
  */
 class DynamicLinkBackendClient(private val config: MyDeeplinkSdkConfig?) {
 
@@ -37,8 +37,8 @@ class DynamicLinkBackendClient(private val config: MyDeeplinkSdkConfig?) {
         val code = shortCode.trim()
         require(code.isNotEmpty()) { "shortCode must not be empty" }
 
-        val base  = normalizeBase(config?.baseUrl ?: kDefaultDynamicLinkBaseUrl)
-        val url   = "$base/api/links/code/${encode(code)}"
+        val base = normalizeBase(config?.baseUrl ?: kDefaultDynamicLinkBaseUrl)
+        val url = "$base/api/links/code/${encode(code)}"
         val headers = buildHeaders(includeJsonAccept = true)
 
         logRequest("GET", url, headers, mapOf("short_code" to code))
@@ -69,17 +69,20 @@ class DynamicLinkBackendClient(private val config: MyDeeplinkSdkConfig?) {
             "MyDeeplinkSdk.init() must include a non-empty app_id (or appId)."
         }
 
-        val base    = normalizeBase(cfg.baseUrl)
-        val url     = "$base/api/links/pending-redirect"
+        val base = normalizeBase(cfg.baseUrl)
+        val url = "$base/api/links/pending-redirect"
         val bodyJson = JSONObject().apply {
-            put("app_id",      cfg.appId)
+            put("app_id", cfg.appId)
             put("device_type", cfg.deviceType)
         }
-        val mediaType   = "application/json".toMediaType()
+        val mediaType = "text/plain; charset=utf-8".toMediaType()
         val requestBody = bodyJson.toString().toRequestBody(mediaType)
-        val headers     = buildHeaders(includeJsonAccept = false, contentTypeJson = true)
+        val headers = buildHeaders(
+            includeJsonAccept = false,
+            contentTypeTextPlain = true
+        )
 
-        logRequest("POST", url, headers, bodyJson.toMap())
+        logRequest("POST", url, headers, bodyJson.toPayloadMap())
 
         val request = Request.Builder()
             .url(url)
@@ -92,12 +95,16 @@ class DynamicLinkBackendClient(private val config: MyDeeplinkSdkConfig?) {
         // Same two-step : POST → get short_code → GET by code
         val shortCode = decodedResponse
             .optJSONObject("data")
-            ?.optString("short_code") ?: ""
+            ?.optString("short_code")?.trim() ?: ""
         Log.d(TAG, "this is short code after getting response $shortCode")
+
+        if (shortCode.isBlank()) {
+            Log.d(TAG, "pending-redirect: no short_code in data (no deferred link for this install)")
+            return decodedResponse
+        }
 
         return getLinkByCodeEnvelope(shortCode)
     }
-
 
 
     // ── POST /api/links/public-link ──────────────────────────────────────────
@@ -124,9 +131,10 @@ class DynamicLinkBackendClient(private val config: MyDeeplinkSdkConfig?) {
         val mediaType = "application/json".toMediaType()
         val requestBody = bodyJson.toString().toRequestBody(mediaType)
 
-        val headers = buildHeaders(includeJsonAccept = true, contentTypeJson = true).toMutableMap().apply {
-            put("clientId", clientId)
-        }
+        val headers =
+            buildHeaders(includeJsonAccept = true, contentTypeJson = true).toMutableMap().apply {
+                put("clientId", clientId)
+            }
 
         logRequest("POST", url, headers, body)
 
@@ -140,13 +148,12 @@ class DynamicLinkBackendClient(private val config: MyDeeplinkSdkConfig?) {
     }
 
 
-
     // ── private helpers ───────────────────────────────────────────────────────
 
     private fun executeAndDecode(method: String, url: String, request: Request): JSONObject {
         val response = httpClient.newCall(request).execute()
         val statusCode = response.code
-        val bodyStr    = response.body?.string() ?: ""
+        val bodyStr = response.body?.string() ?: ""
 
         if (statusCode < 200 || statusCode >= 300) {
             throw MyDeeplinkSdkHttpException(statusCode, bodyStr)
@@ -160,30 +167,43 @@ class DynamicLinkBackendClient(private val config: MyDeeplinkSdkConfig?) {
     private fun buildHeaders(
         includeJsonAccept: Boolean,
         contentTypeJson: Boolean = false,
+        contentTypeTextPlain: Boolean = false,
     ): Map<String, String> {
         val ua = config?.userAgent ?: "(MyApp.kt/1.0.0) (Unknown Device; ANDROID UNKNOWN)"
         return buildMap {
             put("User-Agent", ua)
-            if (includeJsonAccept)  put("Accept",       "application/json")
-            if (contentTypeJson)    put("Content-Type", "application/json")
+            if (includeJsonAccept) put("Accept", "application/json")
+            if (contentTypeJson) put("Content-Type", "application/json")
+            if (contentTypeTextPlain) put("Content-Type", "text/plain; charset=utf-8")
         }
     }
 
-    private fun logRequest(method: String, url: String, headers: Map<String, String>, params: Map<String, Any?>) {
-        Log.d(TAG, "MyDeeplinkSdk.http request\n  method: $method\n  url: $url\n  headers: $headers\n  params: $params")
+    private fun logRequest(
+        method: String,
+        url: String,
+        headers: Map<String, String>,
+        params: Map<String, Any?>
+    ) {
+        Log.d(
+            TAG,
+            "MyDeeplinkSdk.http request\n  method: $method\n  url: $url\n  headers: $headers\n  params: $params"
+        )
     }
 
     private fun logResponse(method: String, url: String, statusCode: Int, body: JSONObject) {
-        Log.d(TAG, "MyDeeplinkSdk.http response\n  method: $method\n  url: $url\n  statusCode: $statusCode\n  body: $body")
+        Log.d(
+            TAG,
+            "MyDeeplinkSdk.http response\n  method: $method\n  url: $url\n  statusCode: $statusCode\n  body: $body"
+        )
     }
 
     companion object {
         private fun normalizeBase(base: String) = base.trimEnd('/')
-        private fun encode(value: String)       = java.net.URLEncoder.encode(value, "UTF-8")
+        private fun encode(value: String) = java.net.URLEncoder.encode(value, "UTF-8")
 
         fun extractData(envelope: JSONObject): Map<String, Any?> {
             val data = envelope.optJSONObject("data")
-            return data?.toMap() ?: envelope.toMap()
+            return data?.toPayloadMap() ?: envelope.toPayloadMap()
         }
     }
 }

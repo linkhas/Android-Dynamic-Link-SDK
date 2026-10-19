@@ -9,8 +9,8 @@ class MyApp : Application() {
             context = this,
             config  = mapOf(
                 "app_id"                to packageName,
-                "base_url"              to "https://backend-dynamiclink.tecocraft.us",
-                "path_short_code_hosts" to listOf("backend-dynamiclink.tecocraft.us"),
+                "base_url"              to "https://backend.linkhas.com",
+                "path_short_code_hosts" to listOf("assetlinkslug.linkhas.com"), // name of your Asset Links Slug with .linkhas.com ex. abc.linkhas.com
             )
         )
     }

@@ -18,18 +18,18 @@ data class DynamicLinkProject(
 ) {
     companion object {
         fun fromJson(json: JSONObject): DynamicLinkProject = DynamicLinkProject(
-            id                 = json.optString("id",                   ""),
-            name               = json.optString("name",                 ""),
-            description        = json.optString("description",          ""),
-            onPlaystore        = json.optBoolean("on_playstore",        false),
-            onAppstore         = json.optBoolean("on_appstore",         false),
+            id = json.optString("id", ""),
+            name = json.optString("name", ""),
+            description = json.optString("description", ""),
+            onPlaystore = json.optBoolean("on_playstore", false),
+            onAppstore = json.optBoolean("on_appstore", false),
             androidPackageName = json.optString("android_package_name", ""),
-            iosBundleId        = json.optString("ios_bundle_id").takeIf { it.isNotEmpty() },
-            defaultUrl         = json.optString("default_url",          ""),
+            iosBundleId = json.optString("ios_bundle_id").takeIf { it.isNotEmpty() },
+            defaultUrl = json.optString("default_url", ""),
             androidFallbackUrl = json.optString("android_fallback_url", ""),
-            iosFallbackUrl     = json.optString("ios_fallback_url",     ""),
-            androidHost        = json.optString("android_host").takeIf { it.isNotEmpty() },
-            iosHost            = json.optString("ios_host").takeIf { it.isNotEmpty() },
+            iosFallbackUrl = json.optString("ios_fallback_url", ""),
+            androidHost = json.optString("android_host").takeIf { it.isNotEmpty() },
+            iosHost = json.optString("ios_host").takeIf { it.isNotEmpty() },
         )
     }
 }
@@ -44,6 +44,7 @@ data class DynamicLinkData(
     val androidScheme: String,
     val iosScheme: String,
     val desktopLink: String?,
+    val link: String?,
     val customData: Map<String, Any?>,
     val project: DynamicLinkProject,
 ) {
@@ -53,19 +54,20 @@ data class DynamicLinkData(
     companion object {
         fun fromJson(json: JSONObject): DynamicLinkData {
             val projectJson = json.optJSONObject("project") ?: JSONObject()
-            val dataJson    = json.optJSONObject("data")   ?: JSONObject()
+            val dataJson = json.optJSONObject("data") ?: JSONObject()
             return DynamicLinkData(
-                linkId       = json.optString("link_id",       ""),
-                name         = json.optString("name",          ""),
-                description  = json.optString("description",   ""),
-                shortCode    = json.optString("short_code",    ""),
+                linkId = json.optString("link_id", ""),
+                name = json.optString("name", ""),
+                description = json.optString("description", ""),
+                shortCode = json.optString("short_code", ""),
                 customDomain = json.optString("custom_domain").takeIf { it.isNotEmpty() },
-                projectId    = json.optString("projectId",     ""),
-                androidScheme= json.optString("android_scheme",""),
-                iosScheme    = json.optString("ios_scheme",    ""),
-                desktopLink  = json.optString("desktop_link").takeIf { it.isNotEmpty() },
-                customData   = dataJson.toMap(),
-                project      = DynamicLinkProject.fromJson(projectJson),
+                projectId = json.optString("projectId", ""),
+                androidScheme = json.optString("android_scheme", ""),
+                iosScheme = json.optString("ios_scheme", ""),
+                desktopLink = json.optString("desktop_link").takeIf { it.isNotEmpty() },
+                link = json.optString("link").takeIf { it.isNotEmpty() },
+                customData = dataJson.toPayloadMap(),
+                project = DynamicLinkProject.fromJson(projectJson),
             )
         }
     }
@@ -82,15 +84,15 @@ data class DynamicLinkEnvelope(
             val dataJson = json.optJSONObject("data")
             return DynamicLinkEnvelope(
                 statusCode = json.optInt("statusCode", 0),
-                data       = dataJson?.let { DynamicLinkData.fromJson(it) },
-                message    = json.optString("message", ""),
-                success    = json.optBoolean("success", false),
+                data = dataJson?.let { DynamicLinkData.fromJson(it) },
+                message = json.optString("message", ""),
+                success = json.optBoolean("success", false),
             )
         }
     }
 }
 
-internal fun JSONObject.toMap(): Map<String, Any?> {
+internal fun JSONObject.toPayloadMap(): Map<String, Any?> {
     val map = mutableMapOf<String, Any?>()
     keys().forEach { key -> map[key] = opt(key) }
     return map

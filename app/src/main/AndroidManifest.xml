@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-
+        android:name=".MyApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -21,8 +21,29 @@
             android:theme="@style/Theme.Android_deeplink">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Intent filter for deep linking -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="song" />
+            </intent-filter>
+            <!-- Intent filter for app links -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="http" />
+                <!--  // name of your Asset Links Slug with .linkhas.com ex. abc.linkhas.com   -->
+                <data
+                    android:host="abc.linkhas.com"
+                    android:scheme="https" />
             </intent-filter>
         </activity>
     </application>
