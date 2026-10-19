@@ -28,7 +28,7 @@ private const val UNKNOWN_APP_VERSION  = "1.0.0"
  *     context = this,
  *     config  = mapOf(
  *         "app_id"   to "com.example.myapp",
- *         "base_url" to "https://backend-dynamiclink.tecocraft.us",
+ *         "base_url" to "https://backend.linkhas.com",
  *     )
  * )
  * ```

@@ -241,6 +241,7 @@ App Links (HTTPS, verified):
     <action android:name="android.intent.action.VIEW" />
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE" />
+    <!--  // name of your Asset Links Slug with .linkhas.com ex. abc.linkhas.com   -->
     <data
         android:scheme="https"
         android:host="backend.linkhas.com"
